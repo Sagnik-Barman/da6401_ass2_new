@@ -1,0 +1,6 @@
+venv/
+wandb/
+annotations/
+__pycache__/
+checkpoints/*.pth
+images/
