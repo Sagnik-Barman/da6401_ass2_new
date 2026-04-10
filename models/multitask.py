@@ -92,7 +92,7 @@ class MultiTaskPerceptionModel(nn.Module):
         )
 
         # ── Task 2: Bounding-box regression head ─────────────────────────
-                self.pool_s2_loc = nn.AdaptiveAvgPool2d((4, 4))
+        self.pool_s2_loc = nn.AdaptiveAvgPool2d((4, 4))
         self.pool_s3_loc = nn.AdaptiveAvgPool2d((4, 4))
         self.pool_s4_loc = nn.AdaptiveAvgPool2d((4, 4))
         self.pool_bt_loc = nn.AdaptiveAvgPool2d((4, 4))
