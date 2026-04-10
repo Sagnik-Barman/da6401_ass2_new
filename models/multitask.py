@@ -117,7 +117,7 @@ class MultiTaskPerceptionModel(nn.Module):
       #      nn.ReLU(inplace=True),
        #     nn.Linear(256, 4),
         #    nn.ReLU(inplace=True),   # pixel coords ≥ 0
-        )
+        #)
 
         # ── Task 3: U-Net segmentation decoder ───────────────────────────
         self.dec4 = _DecoderBlock(512, 512, 512)
