@@ -162,3 +162,6 @@ class VGG11(nn.Module):
         s4  = self.block4(p3)
         out = self.pool4(s4)
         return out, [s0, s1, s2, s3, s4]
+
+
+VGG11Encoder = VGG11
