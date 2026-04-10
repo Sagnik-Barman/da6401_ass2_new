@@ -179,7 +179,15 @@ class MultiTaskPerceptionModel(nn.Module):
         cls_logits = self.cls_head(feat_cls)
 
     # Task 2: bounding-box regression
-        bbox = self.bbox_head(bottleneck)
+    #    bbox = self.bbox_head(bottleneck)
+    # Task 2: bounding-box regression
+        raw = self.bbox_head(bottleneck)   # [B, 4]
+        x1, y1, x2, y2 = raw[:, 0], raw[:, 1], raw[:, 2], raw[:, 3]
+        cx = (x1 + x2) / 2
+        cy = (y1 + y2) / 2
+        w  =  x2 - x1
+        h  =  y2 - y1
+        bbox = torch.stack([cx, cy, w, h], dim=1)
 
     # Task 3: segmentation decoder
         d = self.dec4(bottleneck, s4)
