@@ -169,35 +169,28 @@ class MultiTaskPerceptionModel(nn.Module):
             print(f"Loaded segmentation weights from {_UNET_PATH}")
 
     # ── Single unified forward pass ───────────────────────────────────────
-    def forward(self, x: torch.Tensor):
-        """
-        Parameters
-        ----------
-        x : Tensor [B, 3, 224, 224]   normalised input image
+def forward(self, x: torch.Tensor):
+    bottleneck, skips = self.encoder.encode(x)
+    s0, s1, s2, s3, s4 = skips
 
-        Returns
-        -------
-        cls_logits : Tensor [B, 37]             breed classification logits
-        bbox       : Tensor [B, 4]              (cx, cy, w, h) in pixels
-        seg_logits : Tensor [B, 3, 224, 224]    per-pixel segmentation logits
-        """
-        bottleneck, skips = self.encoder.encode(x)
-        s0, s1, s2, s3, s4 = skips
+    # Task 1: classification
+    feat_cls   = self.avgpool(bottleneck)
+    feat_cls   = torch.flatten(feat_cls, 1)
+    cls_logits = self.cls_head(feat_cls)
 
-        # Task 1: classification
-        feat_cls   = self.avgpool(bottleneck)
-        feat_cls   = torch.flatten(feat_cls, 1)
-        cls_logits = self.cls_head(feat_cls)
+    # Task 2: bounding-box regression
+    bbox = self.bbox_head(bottleneck)
 
-        # Task 2: bounding-box regression
-        bbox = self.bbox_head(bottleneck)
+    # Task 3: segmentation decoder
+    d = self.dec4(bottleneck, s4)
+    d = self.dec3(d,          s3)
+    d = self.dec2(d,          s2)
+    d = self.dec1(d,          s1)
+    d = self.dec0(d,          s0)
+    seg_logits = self.seg_head(d)
 
-        # Task 3: segmentation decoder
-        d = self.dec4(bottleneck, s4)
-        d = self.dec3(d,          s3)
-        d = self.dec2(d,          s2)
-        d = self.dec1(d,          s1)
-        d = self.dec0(d,          s0)
-        seg_logits = self.seg_head(d)
-
-        return cls_logits, bbox, seg_logits
+    return {
+        'classification': cls_logits,   # [B, 37]
+        'localization':   bbox,          # [B, 4]
+        'segmentation':   seg_logits,    # [B, 3, 224, 224]
+    }
