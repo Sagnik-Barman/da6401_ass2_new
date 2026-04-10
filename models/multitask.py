@@ -92,16 +92,31 @@ class MultiTaskPerceptionModel(nn.Module):
         )
 
         # ── Task 2: Bounding-box regression head ─────────────────────────
+                self.pool_s2_loc = nn.AdaptiveAvgPool2d((4, 4))
+        self.pool_s3_loc = nn.AdaptiveAvgPool2d((4, 4))
+        self.pool_s4_loc = nn.AdaptiveAvgPool2d((4, 4))
+        self.pool_bt_loc = nn.AdaptiveAvgPool2d((4, 4))
+
         self.bbox_head = nn.Sequential(
-            nn.AdaptiveAvgPool2d((4, 4)),
-            nn.Flatten(),
-            nn.Linear(512 * 4 * 4, 1024),
-            nn.ReLU(inplace=True),
-            CustomDropout(p=0.3),
-            nn.Linear(1024, 256),
-            nn.ReLU(inplace=True),
-            nn.Linear(256, 4),
-            nn.ReLU(inplace=True),   # pixel coords ≥ 0
+        nn.Flatten(),
+        nn.Linear((256 + 512 + 512 + 512) * 4 * 4, 2048),
+        nn.ReLU(inplace=True),
+        CustomDropout(p=0.2),
+        nn.Linear(2048, 512),
+        nn.ReLU(inplace=True),
+        nn.Linear(512, 4),
+        nn.Sigmoid(),
+)
+        #self.bbox_head = nn.Sequential(
+#            nn.AdaptiveAvgPool2d((4, 4)),
+ #           nn.Flatten(),
+  #          nn.Linear(512 * 4 * 4, 1024),
+   #         nn.ReLU(inplace=True),
+    #        CustomDropout(p=0.3),
+     #       nn.Linear(1024, 256),
+      #      nn.ReLU(inplace=True),
+       #     nn.Linear(256, 4),
+        #    nn.ReLU(inplace=True),   # pixel coords ≥ 0
         )
 
         # ── Task 3: U-Net segmentation decoder ───────────────────────────
@@ -181,13 +196,21 @@ class MultiTaskPerceptionModel(nn.Module):
     # Task 2: bounding-box regression
     #    bbox = self.bbox_head(bottleneck)
     # Task 2: bounding-box regression
-        raw = self.bbox_head(bottleneck)   # [B, 4]
-        x1, y1, x2, y2 = raw[:, 0], raw[:, 1], raw[:, 2], raw[:, 3]
-        cx = (x1 + x2) / 2
-        cy = (y1 + y2) / 2
-        w  =  x2 - x1
-        h  =  y2 - y1
-        bbox = torch.stack([cx, cy, w, h], dim=1)
+    #    raw = self.bbox_head(bottleneck)   # [B, 4]
+    #    x1, y1, x2, y2 = raw[:, 0], raw[:, 1], raw[:, 2], raw[:, 3]
+    #    cx = (x1 + x2) / 2
+    #    cy = (y1 + y2) / 2
+    #    w  =  x2 - x1
+    #    h  =  y2 - y1
+    #    bbox = torch.stack([cx, cy, w, h], dim=1)
+    # ── Task 2: Bounding-box regression head ─────────────────────────
+        # Task 2: bounding-box regression
+        f2 = self.pool_s2_loc(s2)
+        f3 = self.pool_s3_loc(s3)
+        f4 = self.pool_s4_loc(s4)
+        fb = self.pool_bt_loc(bottleneck)
+        fused_loc = torch.cat([f2, f3, f4, fb], dim=1)
+        bbox = self.bbox_head(fused_loc) * self.img_size
 
     # Task 3: segmentation decoder
         d = self.dec4(bottleneck, s4)
