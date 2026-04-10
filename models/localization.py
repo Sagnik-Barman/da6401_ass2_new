@@ -54,6 +54,27 @@ class LocalizationModel(nn.Module):
         f4 = self.pool_s4(s4)
         fb = self.pool_bt(bottleneck)
 
+        fused = torch.cat([f2, f3, f4, fb], dim=1)
+        bbox_norm = self.regression_head(fused)
+        bbox = bbox_norm * self.img_size  # now in pixel space
+
+        # Convert [x1, y1, x2, y2] → [cx, cy, w, h] if checkpoint was trained that way
+        x1, y1, x2, y2 = bbox[:, 0], bbox[:, 1], bbox[:, 2], bbox[:, 3]
+        cx = (x1 + x2) / 2
+        cy = (y1 + y2) / 2
+        w  = x2 - x1
+        h  = y2 - y1
+        return torch.stack([cx, cy, w, h], dim=1)
+
+    #def forward(self, x: torch.Tensor) -> torch.Tensor:
+        bottleneck, skips = self.encoder.encode(x)
+        s0, s1, s2, s3, s4 = skips
+
+        f2 = self.pool_s2(s2)
+        f3 = self.pool_s3(s3)
+        f4 = self.pool_s4(s4)
+        fb = self.pool_bt(bottleneck)
+
         fused = torch.cat([f2, f3, f4, fb], dim=1)  # [B, 1792, 4, 4]
         bbox_norm = self.regression_head(fused)
         return bbox_norm * self.img_size
