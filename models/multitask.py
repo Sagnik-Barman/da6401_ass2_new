@@ -67,6 +67,7 @@ class MultiTaskPerceptionModel(nn.Module):
         img_size:        int   = IMG_SIZE,
     ):
         super().__init__()
+        self.img_size = img_size
 
         # ── Step 3 from README: download checkpoints via gdown ───────────
         import gdown
