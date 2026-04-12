@@ -68,11 +68,11 @@ class MultiTaskPerceptionModel(nn.Module):
     ):
         super().__init__()
 
-        # ── Step 3 from README: download checkpoints via gdown ───────────
-        import gdown
-        gdown.download(id="<classifier.pth drive id>", output=_CLASSIFIER_PATH, quiet=False)
-        gdown.download(id="<localizer.pth drive id>",  output=_LOCALIZER_PATH,  quiet=False)
-        gdown.download(id="<unet.pth drive id>",       output=_UNET_PATH,       quiet=False)
+        if not os.path.exists(_CLASSIFIER_PATH) or not os.path.exists(_LOCALIZER_PATH) or not os.path.exists(_UNET_PATH):
+            import gdown
+            gdown.download(id="1TUHvSfGm1nOs6g-tNwjCUwOaa9rx7XkR", output=_CLASSIFIER_PATH, quiet=False)
+            gdown.download(id="1siFAVhefFU90IdnnMFKYDlBCWHaTj8JC", output=_LOCALIZER_PATH, quiet=False)
+            gdown.download(id="1Ao6RdfllVhrXwwBKUEFrOyysAC9JsENa", output=_UNET_PATH, quiet=False)
 
         # ── Shared VGG11 encoder ─────────────────────────────────────────
         self.encoder = VGG11(num_classes=num_classes, dropout_p=dropout_p)
