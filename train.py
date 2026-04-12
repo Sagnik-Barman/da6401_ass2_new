@@ -489,7 +489,10 @@ def train_task4(args):
             bboxes = bboxes.to(DEVICE); masks  = masks.to(DEVICE)
             optimizer.zero_grad()
             with autocast():
-                cls_l, bbox_p, seg_l = model(imgs)
+                preds  = model(imgs)
+                cls_l  = preds['classification']
+                bbox_p = preds['localization']
+                seg_l  = preds['segmentation']
                 l_cls  = cls_crit(cls_l, labels)
                 l_bbox = mse_crit(bbox_p, bboxes) + iou_crit(bbox_p, bboxes)
                 l_seg  = seg_crit(seg_l, masks)
@@ -508,7 +511,10 @@ def train_task4(args):
             for imgs, labels, bboxes, masks in val_ld:
                 imgs   = imgs.to(DEVICE);   labels = labels.to(DEVICE)
                 bboxes = bboxes.to(DEVICE); masks  = masks.to(DEVICE)
-                cls_l, bbox_p, seg_l = model(imgs)
+                preds  = model(imgs)
+                cls_l  = preds['classification']
+                bbox_p = preds['localization']
+                seg_l  = preds['segmentation']
                 v_f1_preds.extend(cls_l.argmax(1).cpu().tolist())
                 v_f1_labels.extend(labels.cpu().tolist())
                 v_iou  += _iou_batch(bbox_p, bboxes) * imgs.size(0)
@@ -543,7 +549,8 @@ def _save_split_checkpoints(model):
     cls_state = {k: v for k, v in state.items()
                  if k.startswith("encoder") or k.startswith("cls_head")
                  or k.startswith("avgpool")}
-    loc_state = {k: v for k, v in state.items()
+    loc_state = {"regression_head." + k.replace("bbox_head.", ""): v
+                 for k, v in state.items()
                  if k.startswith("bbox_head")}
     seg_state = {k: v for k, v in state.items()
                  if k.startswith("dec") or k.startswith("seg_head")}
